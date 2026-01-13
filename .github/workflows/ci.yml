@@ -1,0 +1,40 @@
+name: CI — Smoke test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Start demo app
+        run: |
+          # start the example app (assumes src/app.py runs uvicorn on 127.0.0.1:8000)
+          nohup python src/app.py &> app.log &
+          sleep 4
+
+      - name: Run smoke test
+        run: bash tests/smoke_test.sh
+
+      - name: Upload app logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-log
+          path: app.log
